@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <config.h>
 #include <WebServer.h>
-#include <SPIFFS.h>
 #include "website.h"
 
 const int sensorDataPin1 = 32;//32 is analog
@@ -18,6 +17,7 @@ String header;
 int readSensor();
 int mapReadings(int);
 void sendWebsite();
+void sendData();
 
 unsigned long currentTime = millis();
 
@@ -53,9 +53,9 @@ void setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   server.begin();
-
   
   server.on("/", sendWebsite);
+  server.on("/live", sendData);
 }
 
 void loop() {
@@ -140,12 +140,12 @@ void loop() {
     client.stop();
     Serial.println("Client disconnected.");
     Serial.println("");
-  }*/
+  }
 
   if (millis() - sensorLastOn >= 3000){
     sensorLastOn = millis();
     moistureLevel = mapReadings(readSensor());
-  }
+  }*/
 
  server.handleClient();
 }
@@ -169,13 +169,19 @@ int mapReadings(int val){
   return (int)(((float)val - 4095) * ((100.0)/ (1000.0 - 4095.0)));
 }
 
+void sendData(){
+  int moistureLevel = mapReadings(readSensor());
+  String jsonData = "{\"sensor1\": " + String(moistureLevel) + "}";
+
+  server.send(200, "application/json", jsonData);
+}
+
 void sendWebsite() {
 
   Serial.println("sending web page");
   // you may have to play with this value, big pages need more porcessing time, and hence
   // a longer timeout that 200 ms
   server.send(200, "text/html", PAGE_MAIN);
-
 }
 
 // No moisture is higher analog value, high moisture is low analog value

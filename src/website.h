@@ -15,9 +15,11 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
         }
         .sensor {
             margin: 20px;
-            padding: 10px;
+            padding: 20px;
             border: 1px solid #ccc;
             display: inline-block;
+            background-color: #d0d3d9;
+            border-radius: 25px;
         }
         .button {
             margin-top: 10px;
@@ -39,20 +41,6 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
                     document.getElementById('sensor1').innerText = data.sensor1 + '%';
                 });
         }
-        function toggleSensor(sensorId) {
-            fetch(`/toggle?sensor=${sensorId}`, { method: 'POST' })
-                .then(response => response.text())
-                .then(status => {
-                    const button = document.getElementById(`button-${sensorId}`);
-                    if (status === "ON") {
-                        button.classList.remove('off');
-                        button.innerText = "Turn Off";
-                    } else {
-                        button.classList.add('off');
-                        button.innerText = "Turn On";
-                    }
-                });
-        }
         setInterval(fetchData, 2000);
     </script>
 </head>
@@ -61,10 +49,11 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
     <div class="sensor">
         <h2>Sensor 1</h2>
         <p>Moisture Level: <span id="sensor1">Loading...</span></p>
-        <button id="button-sensor1" class="button" onclick="toggleSensor('sensor1')">Turn Off</button>
     </div>
     
 </body>
 </html>
+
+
 
 )=====";
