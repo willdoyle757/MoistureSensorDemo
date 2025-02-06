@@ -72,8 +72,9 @@ void loop() {
   if (currentTime - previousTime >= 10000){
     int moistureLevel = mapReadings(readSensor());
     String jsonData = 
-      "{\"sensor1\": {\"Data\": "+ String(moistureLevel) + "," + 
-        "\"Name\": " + "\"Plant Name\"}"
+      "{\"sensor1\": {\"data\": "+
+        String(moistureLevel) + "," + 
+        "\"name\": " + "\"Plant Name\"}"
       "}";
     sendDataToFirebase("Sensors", jsonData);
     previousTime = millis();
