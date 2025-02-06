@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <config.h>
 #include <WebServer.h>
-#include <WiFiClientSecure.h>//old use
 #include <HTTPClient.h>
 #include "website.h"
 
@@ -68,12 +67,14 @@ void setup() {
 //todo figure out how to connect to google firebase
 void loop() {
 
-
   currentTime = millis();
 
   if (currentTime - previousTime >= 10000){
     int moistureLevel = mapReadings(readSensor());
-    String jsonData = "{\"sensor1\": " + String(moistureLevel) + "}";
+    String jsonData = 
+      "{\"sensor1\": {\"Data\": "+ String(moistureLevel) + "," + 
+        "\"Name\": " + "\"Plant Name\"}"
+      "}";
     sendDataToFirebase("Sensors", jsonData);
     previousTime = millis();
   }

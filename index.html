@@ -16,19 +16,8 @@
             display: inline-block;
             background-color: #d0d3d9;
             border-radius: 25px;
+            width: 200px;
         }
-        .button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .button.off {
-            background-color: #f44336;
-        }
-
         .progress-container {
             width: 50px;
             height: 200px;
@@ -39,7 +28,6 @@
             display: inline-block;
             margin: 20px;
         }
-
         .progress-bar {
             width: 100%;
             height: 0%;
@@ -48,41 +36,62 @@
             bottom: 0;
             transition: height 0.5s ease-in-out;
         }
-
+        .sensor-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
     </style>
     <script>
         function fetchData() {
-            //gets public moisture sensor data
             fetch('https://plant-sensor-b9d29-default-rtdb.firebaseio.com/Sensors.json')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('sensor1').innerText = data.sensor1 + '%';
-                });
+                    let container = document.getElementById("sensorContainer");
+                    container.innerHTML = ""; // Clear previous sensors
+                    
+                    for (const sensorName in data) {
+                        let sensor = data[sensorName];
+                        let reading = sensor["data"];
+                        let plantName = sensor["name"];
+                        
+                        
+                        let sensorDiv = document.createElement("div");
+                        sensorDiv.classList.add("sensor");
+                        sensorDiv.innerHTML = `
+                            <h2>${plantName}</h2>
+                            <p>Moisture Level: <span id="${sensorName}-level">${reading}%</span></p>
+                            <div class="progress-container">
+                                <div id="${sensorName}-progress" class="progress-bar"></div>
+                            </div>
+                        `;
+                        container.appendChild(sensorDiv);
+
+                        //Update Progress Bar
+                        updateProgress(sensorName, reading);
+                    }
+                })
+                .catch(error => console.error("Error fetching data:", error));
         }
 
-        function updateProgress(value) {
-            let progressBar = document.getElementById("progress");
-            progressBar.style.height = value + "%";
+        function updateProgress(sensorId, value) {
+            let progressBar = document.getElementById(sensorId + "-progress");
+            if (progressBar) {
+                progressBar.style.height = value + "%";
+            }
         }
-        //get data every 2 seconds
+
+        // Fetch data every 2 seconds
         setInterval(fetchData, 2000);
 
-        let progressValue = 0;
-        setInterval(() => {
-            progressValue = document.getElementById('sensor1').innerText.slice(0, -1); //get the data from the span but remove the % character
-            updateProgress(progressValue);
-        }, 50);
-
+        // Initial fetch
+        fetchData();
     </script>
 </head>
 <body>
     <h1>Moisture Sensor Monitor</h1>
-    <div class="sensor">
-        <h2>Sensor</h2>
-        <p>Moisture Level: <span id="sensor1">Loading...</span></p>
-        <div class="progress-container">
-            <div id="progress" class="progress-bar"></div>
-        </div>
+    <div id="sensorContainer" class="sensor-container">
+        <!-- Sensors will be added dynamically here -->
     </div>
 </body>
 </html>
