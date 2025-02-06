@@ -2,6 +2,8 @@
 
 const char PAGE_MAIN[] PROGMEM = R"=====(
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +34,27 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
         .button.off {
             background-color: #f44336;
         }
+
+        .progress-container {
+            width: 50px;
+            height: 200px;
+            background-color: #ddd;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 0%;
+            background-color: blue;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.5s ease-in-out;
+        }
+
     </style>
     <script>
         function fetchData() {
@@ -41,19 +64,33 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
                     document.getElementById('sensor1').innerText = data.sensor1 + '%';
                 });
         }
+
+        function updateProgress(value) {
+            let progressBar = document.getElementById("progress");
+            progressBar.style.height = value + "%";
+        }
+        //get data every 2 seconds
         setInterval(fetchData, 2000);
+
+        let progressValue = 0;
+        setInterval(() => {
+            progressValue = document.getElementById('sensor1').innerText.slice(0, -1); //get the data from the span but remove the % character
+            updateProgress(progressValue);
+        }, 500);
+
     </script>
 </head>
 <body>
     <h1>Moisture Sensor Monitor</h1>
     <div class="sensor">
-        <h2>Sensor 1</h2>
+        <h2>Sensor</h2>
         <p>Moisture Level: <span id="sensor1">Loading...</span></p>
+        <div class="progress-container">
+            <div id="progress" class="progress-bar"></div>
+        </div>
     </div>
-    
 </body>
 </html>
-
 
 
 )=====";
