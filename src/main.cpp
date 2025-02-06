@@ -2,12 +2,12 @@
 #include <WiFi.h>
 #include <config.h>
 #include <WebServer.h>
+#include <WiFiClientSecure.h>//old use
+#include <HTTPClient.h>
 #include "website.h"
 
 const int sensorDataPin1 = 32;//32 is analog
 const int sensorPowerPin1 = 12; //Power pin so that the sensor is only powered when taking reading due to short sensor lifespan
-
-
 
 WebServer server(80);
 
@@ -18,16 +18,17 @@ int readSensor();
 int mapReadings(int);
 void sendWebsite();
 void sendData();
+void sendDataToFirebase(const String& path, const String& jsonData);
 
-unsigned long currentTime = millis();
 
 int moistureLevel = 0;
 
 unsigned long previousTime = 0;
-unsigned long sensorLastOn = 0;
+unsigned long currentTime = 0;
 
 const long timeout = 2000;
 
+WiFiClientSecure client;
 
 void setup() {
 
@@ -56,11 +57,57 @@ void setup() {
   server.begin();
   
   server.on("/", sendWebsite);
+  //server.on("/live", sendData);
   server.on("/live", sendData);
+
+
+  client.setInsecure(); 
+
 }
 
+//todo figure out how to connect to google firebase
 void loop() {
- server.handleClient();
+
+
+  currentTime = millis();
+
+  if (currentTime - previousTime >= 10000){
+    int moistureLevel = mapReadings(readSensor());
+    String jsonData = "{\"sensor1\": " + String(moistureLevel) + "}";
+    sendDataToFirebase("Sensors", jsonData);
+    previousTime = millis();
+  }
+
+  //For handling local connection on LAN
+  server.handleClient();
+}
+
+
+void sendDataToFirebase(const String& path, const String& jsonData)
+{
+  HTTPClient http;
+
+  Serial.println("Connecting to Firebase...");
+
+  String url = String(FIREBASE_URL) + "/" + path + ".json?auth=" + String(API_KEY);
+
+  Serial.print("Requesting URL: ");
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponseCode = http.PUT(jsonData);
+  
+  if (httpResponseCode > 0){
+    Serial.println("Response code: " + String(httpResponseCode));
+    Serial.println(http.getString());
+  }
+  else{
+    Serial.println("Error in sending request");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+
 }
 
 int readSensor()

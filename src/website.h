@@ -76,7 +76,7 @@ const char PAGE_MAIN[] PROGMEM = R"=====(
         setInterval(() => {
             progressValue = document.getElementById('sensor1').innerText.slice(0, -1); //get the data from the span but remove the % character
             updateProgress(progressValue);
-        }, 500);
+        }, 50);
 
     </script>
 </head>

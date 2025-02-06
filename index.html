@@ -52,7 +52,8 @@
     </style>
     <script>
         function fetchData() {
-            fetch('/live')
+            //gets public moisture sensor data
+            fetch('https://plant-sensor-b9d29-default-rtdb.firebaseio.com/Sensors.json')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('sensor1').innerText = data.sensor1 + '%';
