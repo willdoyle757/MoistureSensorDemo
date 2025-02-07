@@ -5,19 +5,31 @@
 #include <HTTPClient.h>
 #include "website.h"
 
-const int sensorDataPin1 = 32;//32 is analog
-const int sensorPowerPin1 = 12; //Power pin so that the sensor is only powered when taking reading due to short sensor lifespan
+const int sensor1DataPin = 32;//32 is analog
+const int sensor1PowerPin = 12; //Power pin so that the sensor is only powered when taking reading due to short sensor lifespan
+
+const int sensor2DataPin = 35;
+const int sensor2PowerPin = 14;
+
+//Where new pins for sensors are added
+int dataPins[] = {sensor1DataPin, sensor2DataPin};
+int powerPins[] = {sensor1PowerPin, sensor2PowerPin};
+String plantNames[] = {"plant1", "plant2"};
+
+int size = sizeof(dataPins)/sizeof(dataPins[0]);
+
 
 WebServer server(80);
 
 //http request
 String header;
 
-int readSensor();
+int readSensor(int dataPin, int powerPin);
 int mapReadings(int);
 void sendWebsite();
 void sendData();
 void sendDataToFirebase(const String& path, const String& jsonData);
+String packageData(int dataPins[], int powerPins[], String plantNames[], int size);
 
 
 int moistureLevel = 0;
@@ -33,10 +45,14 @@ void setup() {
 
   Serial.begin(9600);
 
-  pinMode(sensorDataPin1, INPUT);
-  pinMode(sensorPowerPin1, OUTPUT); //Set pin for power
-
-  digitalWrite(sensorPowerPin1, LOW);
+  //goes through sensors to initialize pins
+  
+  for (int i = 0; i < size; i++){
+    pinMode(dataPins[i], INPUT);
+    pinMode(powerPins[i], OUTPUT);
+    digitalWrite(powerPins[i], LOW);
+  }
+  
 
   //Wifi username and password define in seperate config.h file
   Serial.print("Connecting to ");
@@ -59,7 +75,6 @@ void setup() {
   //server.on("/live", sendData);
   server.on("/live", sendData);
 
-
   client.setInsecure(); 
 
 }
@@ -70,12 +85,9 @@ void loop() {
   currentTime = millis();
 
   if (currentTime - previousTime >= 10000){
-    int moistureLevel = mapReadings(readSensor());
-    String jsonData = 
-      "{\"sensor1\": {\"data\": "+
-        String(moistureLevel) + "," + 
-        "\"name\": " + "\"Plant Name\"}"
-      "}";
+    int moistureLevel = mapReadings(readSensor(sensor1DataPin, sensor1PowerPin));
+    String jsonData = packageData(dataPins, powerPins, plantNames, size);
+      
     sendDataToFirebase("Sensors", jsonData);
     previousTime = millis();
   }
@@ -84,7 +96,7 @@ void loop() {
   server.handleClient();
 }
 
-
+//Sends Json to the google firebase
 void sendDataToFirebase(const String& path, const String& jsonData)
 {
   HTTPClient http;
@@ -109,15 +121,15 @@ void sendDataToFirebase(const String& path, const String& jsonData)
   }
 
   http.end();
-
 }
 
-int readSensor()
+//
+int readSensor(int dataPin, int powerPin)
 {
-  digitalWrite(sensorPowerPin1, HIGH);
+  digitalWrite(powerPin, HIGH);
   delay(15);
-  int val = analogRead(sensorDataPin1);
-  digitalWrite(sensorPowerPin1, LOW);
+  int val = analogRead(dataPin);
+  digitalWrite(powerPin, LOW);
   return val;
 }
 
@@ -127,22 +139,48 @@ int mapReadings(int val){
   if (val == -1){
     return -40;
   }
-  return (int)(((float)val - 4095) * ((100.0)/ (1000.0 - 4095.0)));
+  return (int)(((float)val - 4095) * ((100.0) / (1000.0 - 4095.0)));
 }
 
+String packageData(int dataPins[], int powerPins[], String plantNames[], int size){
+  
+  int n = size;
+  String jsonData = "{";
+  for (int i = 0; i < n; i++){
+    int moistureLevel = mapReadings(readSensor(dataPins[i], powerPins[i]));
+
+    jsonData+="\"sensor" + String(i+1) + "\": {\"data\": "+ String(moistureLevel) + "," + "\"name\": " + "\"" + plantNames[i] + "\"}";
+
+    if (i != n - 1){
+      jsonData+=",";
+    }
+    
+  }
+  jsonData +="}";
+  Serial.println(jsonData);
+  return jsonData;
+}
+
+/*
+{"
+"\"sensor1\": {\"data\": 0, \"name\": \"plant1\"}, "
+"\"sensor2\": {\"data\": 131, \"name\": \"plant2\"}"
+"}";
+*/
+
+//Sends data to the local client on lan
 void sendData(){
-  int moistureLevel = mapReadings(readSensor());
+  int moistureLevel = mapReadings(readSensor(sensor1DataPin, sensor1PowerPin));
   String jsonData = "{\"sensor1\": " + String(moistureLevel) + "}";
 
   server.send(200, "application/json", jsonData);
 }
 
+//sends website to local client on lan
 void sendWebsite() {
 
   Serial.println("sending web page");
-  // you may have to play with this value, big pages need more porcessing time, and hence
-  // a longer timeout that 200 ms
+  
   server.send(200, "text/html", PAGE_MAIN);
 }
 
-// No moisture is higher analog value, high moisture is low analog value
